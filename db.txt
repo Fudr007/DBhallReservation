@@ -1,8 +1,8 @@
 CREATE TABLE customer (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR2(100) NOT NULL,
-    email VARCHAR2(100) NOT NULL,
-    phone VARCHAR2(30),
+    email VARCHAR2(100) NOT NULL CHECK (REGEXP_LIKE(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')),
+    phone VARCHAR2(15) NOT NULL CHECK (REGEXP_LIKE(phone, '^\+?[0-9]{9,15}$')),
     customer_type VARCHAR2(20) NOT NULL CHECK (customer_type IN ('INDIVIDUAL', 'TEAM', 'CLUB')),
     is_active NUMBER(1) DEFAULT 1 CHECK (is_active IN (0,1)),
     created_at DATE DEFAULT SYSDATE
@@ -12,8 +12,8 @@ CREATE TABLE hall (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR2(100) NOT NULL,
     sport_type VARCHAR2(30) NOT NULL CHECK (sport_type IN ('FOOTBALL', 'BASKETBALL', 'VOLLEYBALL', 'BADMINTON')),
-    hourly_rate NUMBER(8,2) NOT NULL,
-    capacity NUMBER NOT NULL,
+    hourly_rate NUMBER(8,2) NOT NULL CHECK(hourly_rate >=0),
+    capacity NUMBER NOT NULL CHECK(capacity > 0),
     available NUMBER(1) DEFAULT 1 CHECK (available IN (0,1))
 );
 
@@ -23,9 +23,9 @@ CREATE TABLE reservation (
     start_time DATE NOT NULL,
     end_time DATE NOT NULL,
     status VARCHAR2(20) NOT NULL CHECK (status IN ('CREATED', 'CONFIRMED', 'CANCELLED')),
-    total_price NUMBER(10,2),
-    FOREIGN KEY (customer_id) REFERENCES customer(id),
-    CHECK (end_time > start_time)
+    total_price NUMBER(10,2) CHECK(total_price >= 0),
+    CHECK(start_time < end_time),
+    FOREIGN KEY (customer_id) REFERENCES customer(id)
 );
 
 CREATE TABLE reservation_hall (
@@ -39,14 +39,14 @@ CREATE TABLE reservation_hall (
 CREATE TABLE service (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name VARCHAR2(100) NOT NULL,
-    price_per_hour NUMBER(8,2) NOT NULL,
+    price_per_hour NUMBER(8,2) NOT NULL CHECK(price_per_hour >=0),
     is_optional NUMBER(1) DEFAULT 1 CHECK (is_optional IN (0,1))
 );
 
 CREATE TABLE reservation_service (
     reservation_id INT NOT NULL,
     service_id INT NOT NULL,
-    hours NUMBER(5,2) NOT NULL,
+    hours NUMBER(5,2) NOT NULL CHECK(hours > 0),
     PRIMARY KEY (reservation_id, service_id),
     FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE,
     FOREIGN KEY (service_id) REFERENCES service(id)
@@ -55,9 +55,8 @@ CREATE TABLE reservation_service (
 CREATE TABLE payment (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     reservation_id INT NOT NULL,
-    amount NUMBER(10,2) NOT NULL,
+    amount NUMBER(10,2) NOT NULL CHECK(amount > 0),
     payment_method VARCHAR2(20) NOT NULL CHECK (payment_method IN ('CASH', 'CARD', 'TRANSFER')),
     paid_at DATE DEFAULT SYSDATE,
-    successful NUMBER(1) DEFAULT 1 CHECK (successful IN (0,1)),
     FOREIGN KEY (reservation_id) REFERENCES reservation(id)
 );
