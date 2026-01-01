@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import cx_Oracle
 
 class HallError(Exception):
@@ -70,6 +72,27 @@ class Hall:
                                'name': name
                            })
             return cursor.fetchone()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise HallError(f'Hall database error: {error_obj.message}')
+        except Exception as e:
+            raise HallError(f'Hall error: {e}')
+
+    def read_available_in_date(self, time_from:datetime, tim_to:datetime):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT h.id, h.name FROM hall h "
+                           "WHERE NOT EXISTS"
+                           " ( SELECT 1 FROM reservation r JOIN reservation_hall rh ON rh.reservation_id = r.id"
+                           " WHERE rh.hall_id = h.id AND r.status <> 'CANCELLED'"
+                           " AND (:start_time < r.end_time AND :end_time > r.start_time));",
+            {
+                ":start_time": time_from,
+                ":end_time": tim_to
+            })
+            rows = cursor.fetchall()
+            result = {r[0]: r[1] for r in rows}
+            return result
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             raise HallError(f'Hall database error: {error_obj.message}')

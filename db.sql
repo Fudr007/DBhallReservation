@@ -24,8 +24,7 @@ CREATE TABLE hall (
     name VARCHAR2(100) NOT NULL UNIQUE,
     sport_type VARCHAR2(30) NOT NULL CHECK (sport_type IN ('FOOTBALL', 'BASKETBALL', 'VOLLEYBALL', 'BADMINTON', 'HANDBALL', 'FLORBALL')),
     hourly_rate NUMBER(8,2) NOT NULL CHECK(hourly_rate >=0),
-    capacity NUMBER NOT NULL CHECK(capacity > 0),
-    available NUMBER(1) DEFAULT 1 CHECK (available IN (0,1))
+    capacity NUMBER NOT NULL CHECK(capacity > 0)
 );
 
 CREATE TABLE reservation (

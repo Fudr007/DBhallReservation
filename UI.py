@@ -1,3 +1,8 @@
+from datetime import datetime
+
+from Table_Gateways.Customer import Customer
+
+
 class UI:
 
     def message(self, msg):
@@ -58,6 +63,66 @@ class UI:
             "name":name,
             "price_per_hour":price_per_hour,
             "optional":optional
+        }
+
+    def reservation_form(self, customers:dict, services_optional:dict, halls:dict):
+        print("Reservation creation form")
+
+        for customer in customers:
+            print(f"{customer['customer_id']}: {customer['name']}")
+
+        while True:
+            customer_id = int(input("Choose customer id from the list: "))
+            if customer_id not in customers:
+                print("Invalid customer id")
+            else:
+                break
+
+        for hall in halls:
+            print(f"{hall['hall_id']}: {hall['name']}")
+        chosen_halls = []
+        while True:
+            hall_id = int(input("Choose services id from the list after each  (0 to finish): "))
+            if hall_id == 0:
+                break
+            if hall_id in halls and hall_id not in chosen_halls:
+                chosen_halls.append(hall_id)
+            else:
+                print("Invalid hall id or hall already added")
+
+        start_time = input("Enter reservation start time (YYYY-MM-DD HH:MM): ")
+        end_time = input("Enter reservation end time (YYYY-MM-DD HH:MM): ")
+
+        start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+        end_dt = datetime.strptime(end_time, "%Y-%m-%d %H:%M")
+
+        hours = (end_dt - start_dt).total_seconds() / 3600
+
+        for service in services_optional:
+            print(f"{service['service_id']}: {service['name']} ({service['price_per_hour']})")
+        service_id_time = {}
+        while True:
+            service_id = int(input("Choose services id from the list after each  (0 to finish): "))
+            if service_id == 0:
+                break
+            elif service_id in services_optional and service_id not in service_id_time:
+                hour_service = int(input("For how many hours:"))
+                if hour_service <= 0:
+                    print("Invalid hours")
+                    continue
+                if hours < hour_service:
+                    print("Hours must be less than total reservation hours")
+                    continue
+                service_id_time[service_id] = hour_service
+            else:
+                print("Invalid service id or service already added")
+
+        return {
+            "customer_id":customer_id,
+            "halls_ids":chosen_halls,
+            "service_id_time":service_id_time,
+            "start_dt":start_dt,
+            "end_dt":end_dt
         }
 
     def menu(self, actions:dict):

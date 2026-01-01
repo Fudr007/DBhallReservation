@@ -73,6 +73,28 @@ class Service:
         except Exception as e:
             raise ServiceException(f'Service error: {e}')
 
+    def read_optional(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM Service WHERE is_optional = 1")
+            return cursor.fetchall()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ServiceException(f'Service database error: {error_obj.message}')
+        except Exception as e:
+            raise ServiceException(f'Service error: {e}')
+
+    def read_not_optional(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM Service WHERE is_optional = 0")
+            return cursor.fetchall()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ServiceException(f'Service database error: {error_obj.message}')
+        except Exception as e:
+            raise ServiceException(f'Service error: {e}')
+
     def read_all(self):
         try:
             cursor = self.connection.cursor()

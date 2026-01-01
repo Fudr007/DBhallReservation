@@ -8,18 +8,17 @@ class Reservation:
     def __init__(self, db):
         self.db = db
 
-    def create(self, customer_id:int, hall_id:int, start_time:datetime, end_time:datetime, total_price:float, status:str="CREATED" ):
+    def create(self, customer_id:int, start_time:datetime, end_time:datetime, total_price:float=0, status:str="CREATED" ):
         if start_time >= end_time:
             raise ReservationException("Start time must be before end time")
         if total_price <= 0:
             raise ReservationException(f"Invalid total price: {total_price}")
         try:
             cursor = self.db.connection.cursor()
-            cursor.execute("INSERT INTO Reservation (customer_id, hall_id, start_time, end_time, total_price, status) "
-                           "VALUES (:customer_id, :hall_id, :start_time, :end_time, :total_price, :status)",
+            cursor.execute("INSERT INTO Reservation (customer_id, start_time, end_time, total_price, status) "
+                           "VALUES (:customer_id, :start_time, :end_time, :total_price, :status)",
                            {
                                "customer_id": customer_id,
-                               "hall_id": hall_id,
                                "start_time": start_time,
                                "end_time": end_time,
                                "total_price": total_price,
