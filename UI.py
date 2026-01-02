@@ -29,7 +29,7 @@ class UI:
             print("Invalid sport type")
             self.hall_form()
         hourly_rate = float(input("Enter hall hourly rate: "))
-        if hourly_rate < 0:
+        if hourly_rate < 0.0:
             print("Invalid hourly rate")
             self.hall_form()
         capacity = int(input("Enter hall capacity: "))
@@ -47,7 +47,7 @@ class UI:
         print("Service creation form")
         name = input("Enter service name: ")
         price_per_hour = float(input("Enter service price per hour: "))
-        if price_per_hour < 0:
+        if price_per_hour < 0.0:
             print("Invalid price per hour")
             self.service_form()
         optional = input("Is service optional (Y/N): ")
@@ -65,28 +65,32 @@ class UI:
             "optional":optional
         }
 
-    def reservation_form(self, customers:dict, services_optional:dict, halls:dict):
+    def reservation_form(self, customers, services_optional, halls):
         print("Reservation creation form")
-
+        customers_dict = {r[0]: r for r in customers}
         for customer in customers:
-            print(f"{customer['customer_id']}: {customer['name']}")
+            print(f"{customer[0]}: {customer[2]}, {customer[3]}")
 
         while True:
-            customer_id = int(input("Choose customer id from the list: "))
-            if customer_id not in customers:
+            customer_id = int(input("Choose customer id from the list and hit Enter: "))
+            if customer_id not in customers_dict:
                 print("Invalid customer id")
             else:
                 break
 
+        halls_dict = {r[0]: r for r in halls}
         for hall in halls:
-            print(f"{hall['hall_id']}: {hall['name']}")
-        chosen_halls = []
+            print(f"{hall[0]}: {hall[1]}, {hall[3]}/h")
+        chosen_halls = {}
         while True:
-            hall_id = int(input("Choose services id from the list after each  (0 to finish): "))
+            hall_id = int(input("Choose hall id from the list after each hit Enter (0 to finish): "))
             if hall_id == 0:
+                if not chosen_halls:
+                    print("No halls chosen")
+                    continue
                 break
-            if hall_id in halls and hall_id not in chosen_halls:
-                chosen_halls.append(hall_id)
+            if hall_id in halls_dict and hall_id not in chosen_halls:
+                chosen_halls[hall_id] = halls_dict[hall_id]
             else:
                 print("Invalid hall id or hall already added")
 
@@ -98,14 +102,15 @@ class UI:
 
         hours = (end_dt - start_dt).total_seconds() / 3600
 
+        service_dict = {r[0]: r for r in services_optional}
         for service in services_optional:
-            print(f"{service['service_id']}: {service['name']} ({service['price_per_hour']})")
-        service_id_time = {}
+            print(f"{service[0]}: {service[1]}, {service[2]}/h")
+        chosen_services = {}
         while True:
-            service_id = int(input("Choose services id from the list after each  (0 to finish): "))
+            service_id = int(input("Choose optional services id from the list after each hit Enter (0 to finish): "))
             if service_id == 0:
                 break
-            elif service_id in services_optional and service_id not in service_id_time:
+            elif service_id in service_dict and service_id not in chosen_services:
                 hour_service = int(input("For how many hours:"))
                 if hour_service <= 0:
                     print("Invalid hours")
@@ -113,14 +118,14 @@ class UI:
                 if hours < hour_service:
                     print("Hours must be less than total reservation hours")
                     continue
-                service_id_time[service_id] = hour_service
+                chosen_services[service_id] = hour_service * service_dict[service_id][2]
             else:
                 print("Invalid service id or service already added")
 
         return {
             "customer_id":customer_id,
-            "halls_ids":chosen_halls,
-            "service_id_time":service_id_time,
+            "halls":chosen_halls,
+            "chosen_services":chosen_services,
             "start_dt":start_dt,
             "end_dt":end_dt
         }

@@ -5,9 +5,9 @@ from Config.Config_load import load_config
 from DBconnect import DBconnect
 from Config.Sql_load import load_sql
 from Services.Customer_Service import CustomerService
+from Services.Reservation_Service import ReservationService
 from Table_Gateways.Customer import Customer
 from Table_Gateways.Hall import Hall
-from Table_Gateways.Reservation import Reservation
 from Table_Gateways.Service import Service
 from UI import UI
 
@@ -33,10 +33,10 @@ class App:
 
         while True:
             try:
-                self.UI.message("Welcome in halls management system \n Choose an action and confirm it with Enter key:")
+                self.UI.message("Welcome in halls management system\nChoose an action and confirm it with Enter key:")
                 self.UI.menu(self.actions())
-                choosen_action = input()
-                self.actions()[choosen_action]()
+                chosen_action = input()
+                self.actions()[chosen_action]()
             except Exception as e:
                 self.UI.message(e)
 
@@ -65,26 +65,8 @@ class App:
         services_not_optional = Service(self.connection).read_not_optional()
         halls = Hall(self.connection).read_all()
         information = self.UI.reservation_form(customers, services_optional, halls)
-        halls_ok = self.check_halls(information["halls"], information["start_dt"], information["end_dt"])
-        if type(halls_ok) == str:
-            self.UI.message(f"Hall {halls_ok} is unavailable in selected time")
-            return
-
-        reservation = Reservation(self.connection)
-        reservation.create(information["customer_id"], information["start_dt"], information["end_dt"])
-
-
-    def check_halls(self, halls:list, time_from:datetime, time_to:datetime):
-        available_halls_in_time_range = Hall(self.connection).read_available_in_date(time_from, time_to)
-        for hall in halls:
-            if hall.id not in available_halls_in_time_range:
-                return available_halls_in_time_range[hall.id]
-
-        return True
-
-    def calc_price(self, services_id_time:dict, halls:list, start_time:datetime, end_time:datetime):
-        reservation_price = 0
-
+        reservation_service = ReservationService(self.connection)
+        reservation_service.create_reservation(information["customer_id"], information["start_dt"], information["end_dt"], information["chosen_services"], services_not_optional, information["halls"])
 
     def db_load_connect(self):
         try:
