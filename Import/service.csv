@@ -1,0 +1,6 @@
+name,price_per_hour,is_optional
+Lighting,150,0
+Referee,500,1
+Cleaning service,200,1
+Sound system,300,1
+Security staff,400,0
