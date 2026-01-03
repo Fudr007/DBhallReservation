@@ -1,6 +1,5 @@
 import cx_Oracle
 
-
 class CashAccountError(Exception):
     pass
 
@@ -39,14 +38,17 @@ class CashAccount:
             self.connection.rollback()
             raise CashAccountError(f'Cash account error: {e}')
 
-    def update(self, balance:float, id:int):
+    def update(self, balance:float, id:int, operation:str='+'):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = :balance WHERE id = :id",
-                           {
-                               'balance': balance,
-                               'id': id
-                           })
+            if operation == '+':
+                sql = "UPDATE CASH_ACCOUNT SET BALANCE = BALANCE + :balance WHERE id = :id"
+            elif operation == '-':
+                sql = "UPDATE CASH_ACCOUNT SET BALANCE = BALANCE - :balance WHERE id = :id"
+            else:
+                raise ValueError("Invalid operation")
+
+            cursor.execute(sql, {"balance": balance, "id": id})
             self.connection.commit()
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
@@ -62,6 +64,43 @@ class CashAccount:
             cursor.execute("DELETE FROM CASH_ACCOUNT WHERE id = :id",
                            {
                                'id': id
+                           })
+            self.connection.commit()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            self.connection.rollback()
+            raise CashAccountError(f'Cash account database error: {error_obj.message}')
+        except Exception as e:
+            self.connection.rollback()
+            raise CashAccountError(f'Cash account error: {e}')
+
+    def check_balance(self, id:int, amount:float):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT COUNT(*) FROM cash_account WHERE id = :account_id AND balance >= :amount",
+                           {
+                               'account_id': id,
+                               'amount': amount
+                           })
+            boolean = cursor.fetchone()[0]
+            return boolean == 1
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise CashAccountError(f'Cash account database error: {error_obj.message}')
+        except Exception as e:
+            raise CashAccountError(f'Cash account error: {e}')
+
+    def transfer_to_system_account(self, amount:float, id_from:int):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE - :amount WHERE id = :id",
+                           {
+                               'amount': amount,
+                               'id': id_from
+                           })
+            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE + :amount WHERE ACCOUNT_TYPE = 'SYSTEM'",
+                           {
+                               'amount': amount
                            })
             self.connection.commit()
         except cx_Oracle.DatabaseError as e:

@@ -1,12 +1,15 @@
 from datetime import datetime
-
 import cx_Oracle
 
+from Table_Gateways.Cash_Account import CashAccount
 from Table_Gateways.Hall import Hall
+from Table_Gateways.Payment import Payment
 from Table_Gateways.Reservation import Reservation
 from Table_Gateways.Reservation_Hall import ReservationHall
 from Table_Gateways.Reservation_Service import ServiceReservation
 
+class ReservationServiceException(Exception):
+    pass
 
 class ReservationService:
     def __init__(self, connection):
@@ -41,6 +44,75 @@ class ReservationService:
             return e
         except Exception as e:
             return e
+
+    def pay_and_transfer(self, reservation_id:int, account_id:int, amount:float, ):
+        try:
+            payment = Payment(self.connection)
+            payment.create(reservation_id, amount)
+
+            account = CashAccount(self.connection)
+            account.transfer_to_system_account(amount, account_id)
+        except cx_Oracle.DatabaseError as e:
+            return e
+        except Exception as e:
+            return e
+
+    def read_available_halls(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM free_halls_view")
+            return cursor.fetchall()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+        except Exception as e:
+            raise ReservationServiceException(f'Reservation service error: {e}')
+
+    def read_reservation_detail(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM reservation_details_view")
+            return cursor.fetchall()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+        except Exception as e:
+            raise ReservationServiceException(f'Reservation service error: {e}')
+
+    def read_id_name_email(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT r.id AS reservation_id, c.name AS customer_name, c.email AS customer_email FROM reservation r JOIN customer c ON c.id = r.customer_id;")
+            return cursor.fetchall()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+        except Exception as e:
+            raise ReservationServiceException(f'Reservation service error: {e}')
+
+    def read_not_paid(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT r.id AS reservation_id, c.id AS customer_id, c.account_id AS account_id, c.name AS customer_name, c.email as customer_email, r.total_price"
+                           " FROM reservation r JOIN customer c ON c.id = r.customer_id"
+                           " LEFT JOIN payment p ON p.reservation_id = r.id WHERE p.id IS NULL;")
+            return cursor.fetchall()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+        except Exception as e:
+            raise ReservationServiceException(f'Reservation service error: {e}')
+
+    def report(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT * FROM reservation_summary_view")
+            return cursor.fetchone()
+        except cx_Oracle.DatabaseError as e:
+            error_obj, = e.args
+            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+        except Exception as e:
+            raise ReservationServiceException(f'Reservation service error: {e}')
 
     def check_halls(self, halls:dict, time_from:datetime, time_to:datetime):
         hall = Hall(self.connection)

@@ -35,7 +35,7 @@ CREATE TABLE reservation (
     status VARCHAR2(20) NOT NULL CHECK (status IN ('CREATED', 'CONFIRMED', 'CANCELLED')),
     total_price NUMBER(10,2) CHECK(total_price >= 0),
     CHECK(start_time < end_time),
-    FOREIGN KEY (customer_id) REFERENCES customer(id)
+    FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE
 );
 
 CREATE TABLE reservation_hall (
@@ -43,7 +43,7 @@ CREATE TABLE reservation_hall (
     hall_id INT NOT NULL,
     PRIMARY KEY (reservation_id, hall_id),
     FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE,
-    FOREIGN KEY (hall_id) REFERENCES hall(id)
+    FOREIGN KEY (hall_id) REFERENCES hall(id) ON DELETE CASCADE
 );
 
 CREATE TABLE service (
@@ -59,7 +59,7 @@ CREATE TABLE reservation_service (
     hours NUMBER(5,2) NOT NULL CHECK(hours > 0),
     PRIMARY KEY (reservation_id, service_id),
     FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE,
-    FOREIGN KEY (service_id) REFERENCES service(id)
+    FOREIGN KEY (service_id) REFERENCES service(id) ON DELETE CASCADE
 );
 
 CREATE TABLE payment (
@@ -69,3 +69,61 @@ CREATE TABLE payment (
     paid_at DATE DEFAULT SYSDATE,
     FOREIGN KEY (reservation_id) REFERENCES reservation(id)
 );
+
+CREATE VIEW free_halls_view AS
+SELECT h.id AS hall_id,
+       h.name AS hall_name,
+       h.sport_type,
+       h.hourly_rate,
+       h.capacity
+FROM hall h
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM reservation_hall rh
+    JOIN reservation r ON rh.reservation_id = r.id
+    WHERE rh.hall_id = h.id
+      AND r.status <> 'CANCELLED'
+      AND r.start_time <= SYSDATE
+      AND r.end_time   >= SYSDATE
+);
+
+CREATE VIEW reservation_details_view AS
+SELECT r.id AS reservation_id,
+       r.start_time,
+       r.end_time,
+       r.status,
+       r.total_price,
+       c.id AS customer_id,
+       c.name AS customer_name,
+       c.email,
+       h.id AS hall_id,
+       h.name AS hall_name
+FROM reservation r
+JOIN customer c ON r.customer_id = c.id
+JOIN reservation_hall rh ON rh.reservation_id = r.id
+JOIN hall h ON rh.hall_id = h.id;
+
+CREATE VIEW reservation_summary_view AS
+SELECT
+    COUNT(DISTINCT r.id) AS total_reservations,
+    COUNT(DISTINCT CASE WHEN r.status <> 'CANCELLED' THEN r.id END) AS active_reservations,
+    MIN(r.total_price) AS min_reservation_price,
+    MAX(r.total_price) AS max_reservation_price,
+    ROUND(AVG(r.total_price), 2) AS avg_reservation_price,
+
+    NVL(SUM(p.amount), 0) AS total_paid_amount,
+    COUNT(p.id) AS total_payments,
+    ROUND(AVG(p.amount), 2) AS avg_payment,
+
+    COUNT(DISTINCT c.id) AS unique_customers,
+
+    COUNT(DISTINCT rh.hall_id) AS used_halls,
+
+    COUNT(DISTINCT rs.service_id) AS used_services,
+    NVL(SUM(rs.hours), 0) AS total_service_hours
+
+FROM reservation r
+JOIN customer c ON c.id = r.customer_id
+LEFT JOIN payment p ON p.reservation_id = r.id
+LEFT JOIN reservation_hall rh ON rh.reservation_id = r.id
+LEFT JOIN reservation_service rs ON rs.reservation_id = r.id;
