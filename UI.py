@@ -14,17 +14,22 @@ class UI:
     def user_input(self, data_type:str, message:str, enum_options:list=""):
         print(message)
         choice = input(">")
+        choice = choice.strip()
+        choice = choice.replace(" ", "")
         try:
             if data_type == "enter":
                 return ""
             if data_type == "int":
                 choice = int(choice)
+                print(choice)
                 if choice < 0:
                     raise UIError("Invalid input")
+                return choice
             if data_type == "float":
                 choice = float(choice)
                 if choice < 0.0:
                     raise UIError("Invalid input")
+                return choice
             if data_type == "bool":
                 if choice.lower() == "Y":
                     return True

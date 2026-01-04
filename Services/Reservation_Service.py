@@ -93,9 +93,18 @@ class ReservationService:
     def read_not_paid(self):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("SELECT r.id AS reservation_id, c.id AS customer_id, c.account_id AS account_id, c.name AS customer_name, c.email as customer_email, r.total_price"
-                           " FROM reservation r JOIN customer c ON c.id = r.customer_id"
-                           " LEFT JOIN payment p ON p.reservation_id = r.id WHERE p.id IS NULL;")
+            cursor.execute(
+                "SELECT r.id AS reservation_id, "
+                "c.id AS customer_id, "
+                "c.account_id AS account_id, "
+                "c.name AS customer_name, "
+                "c.email AS customer_email, "
+                "r.total_price "
+                "FROM reservation r "
+                "JOIN customer c ON c.id = r.customer_id "
+                "LEFT JOIN payment p ON p.reservation_id = r.id "
+                "WHERE p.id IS NULL"
+            )
             return cursor.fetchall()
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args

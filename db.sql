@@ -11,7 +11,7 @@ CREATE TABLE customer (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id INT NOT NULL,
     name VARCHAR2(100) NOT NULL,
-    email VARCHAR2(100) NOT NULL CHECK (REGEXP_LIKE(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')),
+    email VARCHAR2(100) NOT NULL CHECK (REGEXP_LIKE(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')) UNIQUE,
     phone VARCHAR2(15) NOT NULL CHECK (REGEXP_LIKE(phone, '^\+?[0-9]{9,15}$')),
     customer_type VARCHAR2(20) NOT NULL CHECK (customer_type IN ('INDIVIDUAL', 'TEAM')),
     is_active NUMBER(1) DEFAULT 1 CHECK (is_active IN (0,1)),

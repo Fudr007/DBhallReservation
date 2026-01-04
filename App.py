@@ -1,3 +1,4 @@
+import cx_Oracle
 from cx_Oracle import DatabaseError
 from Config.Config_load import load_config, load_paths
 from DBconnect import DBconnect
@@ -28,6 +29,7 @@ class App:
         self.import_halls = None
         self.import_services = None
         self.UI = UI()
+        self.block_import = False
         self.run()
 
     def run(self):
@@ -38,25 +40,31 @@ class App:
             self.shutdown_error(f"App crashed when configuring database: {str(e)}")
         except Exception as e:
             self.shutdown_error(f"App unexpectedly crashed: {str(e)}")
+
         self.UI.message("Welcome in halls management system")
+        self.UI.message("Info: Import can be done only once and before adding any customers.")
         while True:
             try:
                 self.UI.message("Choose an action and confirm it with Enter key:")
                 self.UI.menu(self.actions())
-                chosen_action = input(">")
+                chosen_action = self.UI.user_input("str", "Choose action number: ")
+                if chosen_action not in self.actions():
+                    raise AppError("Invalid action number")
                 self.actions()[chosen_action]()
             except Exception as e:
                 self.UI.message(e)
+            finally:
+                self.UI.user_input("enter", "Press Enter to continue:")
 
     def add_customer(self):
         try:
             information = self.UI.customer_form()
             customer = CustomerService(self.connection)
-            message = customer.create_customer_and_account(information["name"], information["email"], information["phone"], information["customer_type"])
-            self.UI.message(message)
+            customer.create_customer_and_account(information["name"], information["email"], information["phone"], information["customer_type"])
+            self.UI.message("Customer created successfully")
+            self.block_import = True
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def increase_customers_balance(self):
         try:
@@ -65,29 +73,27 @@ class App:
             information = self.UI.change_balance_form(all_customers)
             cash_account = CashAccount(self.connection)
             cash_account.update(information["amount"], information["balance_id"], '+')
+            self.UI.message("Balance increased successfully")
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def add_hall(self):
         try:
             information = self.UI.hall_form()
             hall = Hall(self.connection)
-            message = hall.create(information["name"], information["sport_type"], information["hourly_rate"], information["capacity"])
-            self.UI.message(message)
+            hall.create(information["name"], information["sport_type"], information["hourly_rate"], information["capacity"])
+            self.UI.message("Hall created successfully")
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def add_service(self):
         try:
             information = self.UI.service_form()
             service = Service(self.connection)
-            message = service.create(information["name"], information["price_per_hour"], information["optional"])
-            self.UI.message(message)
+            service.create(information["name"], information["price_per_hour"], information["optional"])
+            self.UI.message("Service created successfully")
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def add_reservation(self):
         try:
@@ -98,9 +104,9 @@ class App:
             information = self.UI.reservation_form(customers, services_optional, halls)
             reservation_service = ReservationService(self.connection)
             reservation_service.create_reservation(information["customer_id"], information["start_dt"], information["end_dt"], information["chosen_services"], services_not_optional, information["halls"])
+            self.UI.message("Reservation created successfully")
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def delete_reservation(self):
         try:
@@ -109,9 +115,9 @@ class App:
             information = self.UI.delete_reservation_form(reservation_customer)
             reservation = Reservation(self.connection)
             reservation.delete(information)
+            self.UI.message("Reservation deleted successfully")
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def pay_reservation(self):
         try:
@@ -124,9 +130,9 @@ class App:
                 raise Exception("Insufficient funds on customer's account")
 
             reservation_service.pay_and_transfer(information["reservation_id"], information["account_id"], information["total_price"])
+            self.UI.message("Reservation paid successfully")
         except Exception as e:
             self.UI.message(e)
-            self.UI.user_input("enter", "Press Enter to continue:")
 
     def view_now_available_halls(self):
         reservation_service = ReservationService(self.connection)
@@ -144,11 +150,21 @@ class App:
         self.UI.print_report(data)
 
     def import_data(self):
-        import_class = Import(self.connection)
-        import_class.import_csv("cash_account",["account_type", "balance"],self.import_cash_accounts)
-        import_class.import_csv("customer",["account_id", "name", "email", "phone", "customer_type", "is_active"],self.import_customers)
-        import_class.import_csv("hall",["name", "sport_type", "hourly_rate", "capacity"],self.import_halls)
-        import_class.import_csv("service",["name", "price_per_hour", "is_optional"],self.import_services)
+        if not self.block_import:
+            try:
+                import_class = Import(self.connection)
+                import_class.import_csv("cash_account",["account_type", "balance"],self.import_cash_accounts)
+                import_class.import_csv("customer",["account_id", "name", "email", "phone", "customer_type", "is_active"],self.import_customers)
+                import_class.import_csv("hall",["name", "sport_type", "hourly_rate", "capacity"],self.import_halls)
+                import_class.import_csv("service",["name", "price_per_hour", "is_optional"],self.import_services)
+                self.block_import = True
+                self.UI.message("Import completed successfully")
+            except cx_Oracle.DatabaseError:
+                self.UI.message("Import has been done or you have already added customers.")
+            except Exception as e:
+                self.UI.message(e)
+        else:
+            self.UI.message("Import has been done or you have already added customers.")
 
     def load_paths(self):
         try:

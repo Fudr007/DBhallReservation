@@ -21,7 +21,6 @@ class Hall:
                                "capacity": capacity
                             })
             self.connection.commit()
-            return f"Hall {name} created successfully."
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()

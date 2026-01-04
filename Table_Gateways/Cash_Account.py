@@ -93,12 +93,12 @@ class CashAccount:
     def transfer_to_system_account(self, amount:float, id_from:int):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE - :amount WHERE id = :id",
+            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE - :amount WHERE id = :id;",
                            {
                                'amount': amount,
                                'id': id_from
                            })
-            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE + :amount WHERE ACCOUNT_TYPE = 'SYSTEM'",
+            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE + :amount WHERE ACCOUNT_TYPE = 'SYSTEM';",
                            {
                                'amount': amount
                            })

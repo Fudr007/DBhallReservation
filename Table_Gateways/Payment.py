@@ -11,7 +11,7 @@ class Payment:
         try:
             cursor = self.connection.cursor()
             cursor.execute("INSERT INTO Payment (reservation_id, amount) "
-                           "VALUES (:reservation_id, :amount)",
+                           "VALUES (:reservation_id, :amount);",
                            {
                                "reservation_id": reservation_id,
                                "amount": amount,
