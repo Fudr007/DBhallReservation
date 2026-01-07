@@ -48,7 +48,7 @@ def load_paths(path="config.ini"):
         raise ConfigError("Missing [path] section in config file.")
 
     paths = config["path"]
-    required = ["db_code" ,"import_account", "import_customer", "import_service", "import_hall"]
+    required = ["db_code", "import_customer", "import_service", "import_hall"]
     for field in required:
         if field not in paths or not paths[field].strip():
             raise ConfigError(f"Missing or empty '{field}' in config file.")
@@ -59,7 +59,6 @@ def load_paths(path="config.ini"):
 
     return {
         "db_code": paths["db_code"],
-        "import_account": paths["import_account"],
         "import_customer": paths["import_customer"],
         "import_service": paths["import_service"],
         "import_hall": paths["import_hall"]

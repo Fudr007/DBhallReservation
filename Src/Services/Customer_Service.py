@@ -1,7 +1,8 @@
 import cx_Oracle
 
-from Table_Gateways.Cash_Account import CashAccount
-from Table_Gateways.Customer import Customer
+from Src.Table_Gateways.Cash_Account import CashAccount, CashAccountError
+from Src.Table_Gateways.Customer import Customer, CustomerError
+
 
 class CustomerServiceException(Exception):
     pass
@@ -16,8 +17,12 @@ class CustomerService:
             acc_id = account.create()
             customer = Customer(self.db)
             customer.create(acc_id, name, email, phone, customer_type)
+        except CustomerError as e:
+            raise CustomerServiceException(f'{e}')
+        except CashAccountError as e:
+            raise CustomerServiceException(f'{e}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
-            raise CustomerServiceException(f'{error_obj.message}')
+            raise CustomerServiceException(f'Error in database while creating customer and his account: {error_obj.message}')
         except Exception as e:
-            raise CustomerServiceException(f'{e}')
+            raise CustomerServiceException(f'Unexpected error while creating customer and his account:{e}')

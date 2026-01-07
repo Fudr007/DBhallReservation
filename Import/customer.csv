@@ -1,5 +1,5 @@
-account_id,name,email,phone,customer_type,is_active
-2,Jan Novak,jan.novak@email.cz,+420777111222,INDIVIDUAL,1
-3,Petr Svoboda,petr.svoboda@email.cz,+420777333444,INDIVIDUAL,1
-4,SK Dynamo Praha,info@dynamopraha.cz,+420777555666,TEAM,1
-5,HC Brno,hcbrno@email.cz,+420777888999,TEAM,1
+name,email,phone,customer_type,is_active
+Jan Novak,jan.novak@email.cz,+420777111222,INDIVIDUAL,1
+Petr Svoboda,petr.svoboda@email.cz,+420777333444,INDIVIDUAL,1
+SK Dynamo Praha,info@dynamopraha.cz,+420777555666,TEAM,1
+HC Brno,hcbrno@email.cz,+420777888999,TEAM,1

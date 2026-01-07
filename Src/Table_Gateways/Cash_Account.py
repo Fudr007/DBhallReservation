@@ -15,11 +15,6 @@ class CashAccount:
 
         try:
             cursor = self.connection.cursor()
-            if account_type.upper() == 'SYSTEM':
-                cursor.execute("SELECT id FROM account WHERE account_type = 'SYSTEM'")
-                row = cursor.fetchone()
-                if row is not None:
-                    raise CashAccountError('System account already exists')
             account_id_var = cursor.var(cx_Oracle.NUMBER)
             cursor.execute("INSERT INTO CASH_ACCOUNT (BALANCE, ACCOUNT_TYPE) VALUES (:balance, :account_type) RETURNING id INTO :id",
                            {
@@ -30,6 +25,19 @@ class CashAccount:
             self.connection.commit()
             account_id = account_id_var.getvalue()[0]
             return int(account_id)
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise CashAccountError("Cash Account database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise CashAccountError("Cash Account database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise CashAccountError("Cash Account database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise CashAccountError("Cash Account database integrity error: Too large value")
+            else:
+                raise CashAccountError(f'Cash Account database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
@@ -50,6 +58,19 @@ class CashAccount:
 
             cursor.execute(sql, {"balance": balance, "id": id})
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise CashAccountError("Cash Account database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise CashAccountError("Cash Account database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise CashAccountError("Cash Account database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise CashAccountError("Cash Account database integrity error: Too large value")
+            else:
+                raise CashAccountError(f'Cash Account database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
@@ -103,6 +124,19 @@ class CashAccount:
                                'amount': amount
                            })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise CashAccountError("Cash Account database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise CashAccountError("Cash Account database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise CashAccountError("Cash Account database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise CashAccountError("Cash Account database integrity error: Too large value")
+            else:
+                raise CashAccountError(f'Cash Account database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()

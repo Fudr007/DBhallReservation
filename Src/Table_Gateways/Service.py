@@ -18,6 +18,19 @@ class Service:
                                "is_optional": is_optional
                            })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise ServiceException("Service database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise ServiceException("Service database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise ServiceException("Service database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise ServiceException("Service database integrity error: Too large value")
+            else:
+                raise ServiceException(f'Service database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
@@ -35,6 +48,19 @@ class Service:
                                "name": name
                            })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise ServiceException("Service database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise ServiceException("Service database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise ServiceException("Service database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise ServiceException("Service database integrity error: Too large value")
+            else:
+                raise ServiceException(f'Service database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()

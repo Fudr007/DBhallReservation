@@ -1,6 +1,5 @@
 import cx_Oracle
 
-
 class CustomerError(Exception):
     pass
 
@@ -21,6 +20,19 @@ class Customer:
                                 "customer_type": customer_type
                             })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise CustomerError("Customer database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise CustomerError("Customer database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise CustomerError("Customer database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise CustomerError("Customer database integrity error: Too large value")
+            else:
+                raise CustomerError(f'Customer database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
@@ -39,6 +51,19 @@ class Customer:
                                "email": email
                            })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise CustomerError("Customer database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise CustomerError("Customer database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise CustomerError("Customer database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise CustomerError("Customer database integrity error: Too large value")
+            else:
+                raise CustomerError(f'Customer database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()

@@ -1,12 +1,12 @@
 from datetime import datetime
 import cx_Oracle
 
-from Table_Gateways.Cash_Account import CashAccount
-from Table_Gateways.Hall import Hall
-from Table_Gateways.Payment import Payment
-from Table_Gateways.Reservation import Reservation
-from Table_Gateways.Reservation_Hall import ReservationHall
-from Table_Gateways.Reservation_Service import ServiceReservation
+from Src.Table_Gateways.Cash_Account import CashAccount, CashAccountError
+from Src.Table_Gateways.Hall import Hall
+from Src.Table_Gateways.Payment import Payment, PaymentException
+from Src.Table_Gateways.Reservation import Reservation, ReservationException
+from Src.Table_Gateways.Reservation_Hall import ReservationHall, ReservationHallException
+from Src.Table_Gateways.Reservation_Service import ServiceReservation
 
 class ReservationServiceException(Exception):
     pass
@@ -39,11 +39,16 @@ class ReservationService:
             reservation_hall = ReservationHall(self.connection)
             for hall in halls.keys():
                 reservation_hall.create(reservation_id, hall)
-
+        except ReservationException as e:
+            raise ReservationServiceException(f'{e}')
+        except ReservationServiceException as e:
+            raise ReservationServiceException(f'{e}')
+        except ReservationHallException as e:
+            raise ReservationServiceException(f'{e}')
         except cx_Oracle.DatabaseError as e:
-            return e
+            raise ReservationServiceException(f'Reservation service database error: {e}')
         except Exception as e:
-            return e
+            raise ReservationServiceException(f'Unexpected error while creating reservation {e}')
 
     def pay_and_transfer(self, reservation_id:int, account_id:int, amount:float, ):
         try:
@@ -52,10 +57,14 @@ class ReservationService:
 
             account = CashAccount(self.connection)
             account.transfer_to_system_account(amount, account_id)
+        except PaymentException as e:
+            raise ReservationServiceException(f'{e}')
+        except CashAccountError as e:
+            raise ReservationServiceException(f'{e}')
         except cx_Oracle.DatabaseError as e:
-            return e
+            raise ReservationServiceException(f'Payment database error: {e}')
         except Exception as e:
-            return e
+            raise ReservationServiceException(f'Unexpected error while paying reservation {e}')
 
     def read_available_halls(self):
         try:

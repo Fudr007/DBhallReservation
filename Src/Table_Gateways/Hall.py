@@ -21,6 +21,19 @@ class Hall:
                                "capacity": capacity
                             })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise HallError("Hall database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise HallError("Hall database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise HallError("Hall database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise HallError("Hall database integrity error: Too large value")
+            else:
+                raise HallError(f'Hall database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
@@ -39,6 +52,19 @@ class Hall:
                                "name": name
                            })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise HallError("Hall database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise HallError("Hall database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise HallError("Hall database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise HallError("Hall database integrity error: Too large value")
+            else:
+                raise HallError(f'Hall database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()

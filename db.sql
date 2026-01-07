@@ -10,7 +10,7 @@ ON cash_account ( CASE WHEN account_type = 'SYSTEM' THEN account_type END);
 CREATE TABLE customer (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id INT NOT NULL,
-    name VARCHAR2(100) NOT NULL,
+    name VARCHAR2(100) NOT NULL (REGEXP_LIKE(name, '/^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžæÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.''-]+$/u')),
     email VARCHAR2(100) NOT NULL CHECK (REGEXP_LIKE(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')) UNIQUE,
     phone VARCHAR2(15) NOT NULL CHECK (REGEXP_LIKE(phone, '^\+?[0-9]{9,15}$')),
     customer_type VARCHAR2(20) NOT NULL CHECK (customer_type IN ('INDIVIDUAL', 'TEAM')),
@@ -21,7 +21,7 @@ CREATE TABLE customer (
 
 CREATE TABLE hall (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR2(100) NOT NULL UNIQUE,
+    name VARCHAR2(100) NOT NULL UNIQUE (REGEXP_LIKE(name, '/^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžæÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.''-]+$/u')),
     sport_type VARCHAR2(30) NOT NULL CHECK (sport_type IN ('FOOTBALL', 'BASKETBALL', 'VOLLEYBALL', 'BADMINTON', 'HANDBALL', 'FLORBALL')),
     hourly_rate NUMBER(8,2) NOT NULL CHECK(hourly_rate >=0),
     capacity NUMBER NOT NULL CHECK(capacity > 0)
@@ -48,7 +48,7 @@ CREATE TABLE reservation_hall (
 
 CREATE TABLE service (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR2(100) NOT NULL UNIQUE,
+    name VARCHAR2(100) NOT NULL UNIQUE (REGEXP_LIKE(name, '/^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžæÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.''-]+$/u')),
     price_per_hour NUMBER(8,2) NOT NULL CHECK(price_per_hour >=0),
     is_optional NUMBER(1) DEFAULT 1 CHECK (is_optional IN (0,1))
 );
@@ -68,6 +68,13 @@ CREATE TABLE payment (
     amount NUMBER(10,2) NOT NULL CHECK(amount > 0),
     paid_at DATE DEFAULT SYSDATE,
     FOREIGN KEY (reservation_id) REFERENCES reservation(id)
+);
+
+INSERT INTO cash_account (account_type, balance)
+SELECT 'SYSTEM', 0
+FROM dual
+WHERE NOT EXISTS (
+    SELECT 1 FROM cash_account WHERE account_type = 'SYSTEM'
 );
 
 CREATE VIEW free_halls_view AS

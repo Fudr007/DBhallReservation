@@ -33,6 +33,19 @@ class Reservation:
             self.connection.commit()
             reservation_id = int(new_id.getvalue()[0])
             return reservation_id
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise ReservationException("Reservation database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise ReservationException("Reservation database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise ReservationException("Reservation database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise ReservationException("Reservation database integrity error: Too large value")
+            else:
+                raise ReservationException(f'Reservation database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
@@ -50,6 +63,20 @@ class Reservation:
                                "reservation_id": reservation_id
                            })
             self.connection.commit()
+        except cx_Oracle.IntegrityError as e:
+            error, = e.args
+            self.connection.rollback()
+            if error.code == 1:
+                raise ReservationException(
+                    "Reservation database integrity error: Object with duplicate data in database")
+            elif error.code == 2290:
+                raise ReservationException("Reservation database integrity error: Invalid values")
+            elif error.code == 1400:
+                raise ReservationException("Reservation database integrity error: Cannot insert NULL values")
+            elif error.code == 1438 or error.code == 12899:
+                raise ReservationException("Reservation database integrity error: Too large value")
+            else:
+                raise ReservationException(f'Reservation database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()

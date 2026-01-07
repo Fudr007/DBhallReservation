@@ -1,17 +1,16 @@
-import cx_Oracle
 from cx_Oracle import DatabaseError
-from Config.Config_load import load_config, load_paths
-from DBconnect import DBconnect
-from Config.Sql_load import load_sql
-from Services.Customer_Service import CustomerService
-from Services.Import import Import
-from Services.Reservation_Service import ReservationService
-from Table_Gateways.Cash_Account import CashAccount
-from Table_Gateways.Customer import Customer
-from Table_Gateways.Hall import Hall
-from Table_Gateways.Reservation import Reservation
-from Table_Gateways.Service import Service
-from UI import UI
+from Src.Config.Config_load import load_config, load_paths
+from Src.DBconnect import DBconnect
+from Src.Config.Sql_load import load_sql
+from Src.Services.Customer_Service import CustomerService
+from Src.Services.Import import Import, ImportingError
+from Src.Services.Reservation_Service import ReservationService
+from Src.Table_Gateways.Cash_Account import CashAccount
+from Src.Table_Gateways.Customer import Customer
+from Src.Table_Gateways.Hall import Hall
+from Src.Table_Gateways.Reservation import Reservation
+from Src.Table_Gateways.Service import Service
+from Src.UI import UI
 
 class AppError(Exception):
     pass
@@ -29,23 +28,24 @@ class App:
         self.import_halls = None
         self.import_services = None
         self.UI = UI()
-        self.block_import = False
+        self._is_running = False
         self.run()
 
     def run(self):
+        self._is_running = True
         try:
             self.load_paths()
             self.db_load_connect()
         except AppConfigError as e:
-            self.shutdown_error(f"App crashed when configuring database: {str(e)}")
+            self.shutdown(f"App crashed when configuring database: {str(e)}")
         except Exception as e:
-            self.shutdown_error(f"App unexpectedly crashed: {str(e)}")
+            self.shutdown(f"App unexpectedly crashed: {str(e)}")
 
-        self.UI.message("Welcome in halls management system")
-        self.UI.message("Info: Import can be done only once and before adding any customers.")
-        while True:
+        while self._is_running:
+            self.UI.print_line()
+            self.UI.message("Welcome in halls management system")
             try:
-                self.UI.message("Choose an action and confirm it with Enter key:")
+                self.UI.message("Choose an action and confirm it with Enter key")
                 self.UI.menu(self.actions())
                 chosen_action = self.UI.user_input("str", "Choose action number: ")
                 if chosen_action not in self.actions():
@@ -55,6 +55,7 @@ class App:
                 self.UI.message(e)
             finally:
                 self.UI.user_input("enter", "Press Enter to continue:")
+                self.UI.clear_console()
 
     def add_customer(self):
         try:
@@ -150,21 +151,19 @@ class App:
         self.UI.print_report(data)
 
     def import_data(self):
-        if not self.block_import:
-            try:
-                import_class = Import(self.connection)
-                import_class.import_csv("cash_account",["account_type", "balance"],self.import_cash_accounts)
-                import_class.import_csv("customer",["account_id", "name", "email", "phone", "customer_type", "is_active"],self.import_customers)
-                import_class.import_csv("hall",["name", "sport_type", "hourly_rate", "capacity"],self.import_halls)
-                import_class.import_csv("service",["name", "price_per_hour", "is_optional"],self.import_services)
-                self.block_import = True
-                self.UI.message("Import completed successfully")
-            except cx_Oracle.DatabaseError:
-                self.UI.message("Import has been done or you have already added customers.")
-            except Exception as e:
+        try:
+            import_class = Import(self.connection)
+            import_class.import_csv("customer",self.import_customers)
+            import_class.import_csv("hall",self.import_halls)
+            import_class.import_csv("service",self.import_services)
+            self.UI.message("Import completed successfully")
+        except ImportingError as e:
+            if str(e) == "Already exists":
+                self.UI.message("Import has already been done.")
+            else:
                 self.UI.message(e)
-        else:
-            self.UI.message("Import has been done or you have already added customers.")
+        except Exception as e:
+            self.UI.message(e)
 
     def load_paths(self):
         try:
@@ -173,7 +172,6 @@ class App:
             raise AppConfigError("Configuration error: "+ str(e))
 
         self.sql_path = paths["db_code"]
-        self.import_cash_accounts = paths["import_account"]
         self.import_customers = paths["import_customer"]
         self.import_halls = paths["import_hall"]
         self.import_services = paths["import_service"]
@@ -190,8 +188,6 @@ class App:
             load_result = load_sql(self.connection, self.sql_path)
             if type(load_result) == Exception or type(load_result) == DatabaseError:
                 raise AppConfigError(str(load_result))
-            else:
-                self.UI.message("Database imported successfully")
         except Exception as e:
             raise AppConfigError("Error when importing database: "+ str(e))
 
@@ -215,10 +211,4 @@ class App:
         if self.connection:
             self.connection.close()
         self.UI.message(message)
-        exit(0)
-
-    def shutdown_error(self, message):
-        if self.connection:
-            self.connection.close()
-        self.UI.message(message)
-        exit(1)
+        self._is_running = False
