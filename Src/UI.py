@@ -40,9 +40,9 @@ class UI:
                 return choice
             if data_type == "bool":
                 choice = choice.replace(" ", "")
-                if choice.lower() == "Y":
+                if choice.lower() == "y":
                     return True
-                elif choice.lower() == "N":
+                elif choice.lower() == "n":
                     return False
             if data_type == "str":
                 return choice
@@ -82,12 +82,12 @@ class UI:
             try:
                 customers_dict = {r[0]: r for r in customers}
                 for customer in customers:
-                    print(f"{customer[0]}: {customer[2]}, {customer[3]}")
+                    print(f"{customer[0]}: {customer[1]}, {customer[2]} Balance: {customer[3]}")
                 customer_id = self.user_input("int","Choose customer id from the list and hit Enter: ")
                 if customer_id not in customers_dict:
                     raise UIError("Invalid customer id")
 
-                balance_id = customers_dict[customer_id][1]
+                balance_id = customers_dict[customer_id][4]
                 amount = self.user_input("float","Enter amount to add to the balance:")
                 return {
                     "balance_id" : balance_id,
@@ -207,13 +207,16 @@ class UI:
 
     def delete_reservation_form(self, reservations):
         print("Reservation deletion form")
+        if not reservations:
+            raise UIWrongInputError("No reservations to be deleted")
         while True:
             try:
-                if not reservations:
-                    raise Exception("No reservations to be deleted")
                 reservations_dict = {r[0]: r for r in reservations}
                 for reservation in reservations:
-                    print(f"{reservation[0]}: {reservation[1]}, {reservation[2]}")
+                    print(
+                        f"{reservation[0]}: {reservation[1]}-{reservation[2]}, Status: {reservation[3]}, Total price: {reservation[4]},"
+                        f" Customer: {reservation[6]}, {reservation[7]}, Hall: {reservation[9]}")
+
                 reservation_id = self.user_input("int","Choose reservation id from the list and hit Enter: ")
                 if reservation_id not in reservations_dict:
                     raise UIError("Invalid reservation id")
@@ -226,11 +229,10 @@ class UI:
 
     def payment_form(self, not_paid_reservations):
         print("Payment form")
+        if not not_paid_reservations:
+            raise UIWrongInputError("Error in UI: No unpaid reservations")
         while True:
             try:
-                if not not_paid_reservations:
-                    raise Exception("No unpaid reservations")
-
                 reservations_dict = {r[0]: r for r in not_paid_reservations}
                 for reservation in not_paid_reservations:
                     print(f"{reservation[0]}: {reservation[3]}, {reservation[4]} total sum of {reservation[5]}czk")
@@ -238,10 +240,12 @@ class UI:
                 if reservation_id not in reservations_dict:
                     raise UIError("Invalid reservation id")
 
+                selected_reservation = reservations_dict[reservation_id]
+
                 return {
                     "reservation_id":reservation_id,
-                    "account_id":not_paid_reservations[reservation_id][2],
-                    "total_price":not_paid_reservations[reservation_id][5],
+                    "account_id":selected_reservation[2],
+                    "total_price":selected_reservation[5],
                 }
             except UIError as e:
                 print(e)
@@ -251,20 +255,27 @@ class UI:
     def print_halls(self, halls):
         print("Available halls")
         if not halls:
-            print("No halls available")
-            return
+            raise UIWrongInputError("Error in UI: No halls found")
+
         for hall in halls:
             print(f"{hall[1]}: {hall[2]} {hall[3]}/h Capacity:{hall[4]}")
 
     def print_reservations_detailed(self, reservations):
         print("Detailed reservations:")
         if not reservations:
-            print("No reservations")
-            return
+            raise UIWrongInputError("Error in UI:  reservations found")
 
         for reservation in reservations:
             print(f"{reservation[0]}: {reservation[1]}-{reservation[2]}, Status: {reservation[3]}, Total price: {reservation[4]},"
                   f" Customer: {reservation[6]}, {reservation[7]}, Hall: {reservation[9]}")
+
+    def print_customers(self, customers):
+        print("Available customers:")
+        if not customers:
+            raise UIWrongInputError("Error in UI: No customers found")
+
+        for customer in customers:
+            print(f"{customer[0]}: {customer[1]} {customer[2]} Balance: {customer[3]}")
 
     def print_report(self, data):
         labels = [

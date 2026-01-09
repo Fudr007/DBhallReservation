@@ -51,15 +51,24 @@ class ReservationService:
             raise ReservationServiceException(f'Unexpected error while creating reservation {e}')
 
     def pay_and_transfer(self, reservation_id:int, account_id:int, amount:float, ):
+        payment = None
+        payment_id = None
         try:
             payment = Payment(self.connection)
-            payment.create(reservation_id, amount)
+            payment_id = payment.create(reservation_id, amount)
+            if payment_id is None:
+                raise PaymentException("Payment not created")
 
             account = CashAccount(self.connection)
             account.transfer_to_system_account(amount, account_id)
+
+            reservation = Reservation(self.connection)
+            reservation.update("status", "CONFIRMED", reservation_id)
         except PaymentException as e:
             raise ReservationServiceException(f'{e}')
         except CashAccountError as e:
+            if payment and payment_id:
+                payment.delete(payment_id)
             raise ReservationServiceException(f'{e}')
         except cx_Oracle.DatabaseError as e:
             raise ReservationServiceException(f'Payment database error: {e}')
@@ -91,7 +100,7 @@ class ReservationService:
     def read_id_name_email(self):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("SELECT r.id AS reservation_id, c.name AS customer_name, c.email AS customer_email FROM reservation r JOIN customer c ON c.id = r.customer_id;")
+            cursor.execute("SELECT r.id AS reservation_id, c.name AS customer_name, c.email AS customer_email FROM reservation r JOIN customer c ON c.id = r.customer_id")
             return cursor.fetchall()
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args

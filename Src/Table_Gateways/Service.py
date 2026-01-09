@@ -22,7 +22,7 @@ class Service:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise ServiceException("Service database integrity error: Object with duplicate data in database")
+                raise ServiceException("Service database integrity error: Service with duplicate data in database")
             elif error.code == 2290:
                 raise ServiceException("Service database integrity error: Invalid values")
             elif error.code == 1400:
@@ -52,7 +52,7 @@ class Service:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise ServiceException("Service database integrity error: Object with duplicate data in database")
+                raise ServiceException("Service database integrity error: Service with duplicate data in database")
             elif error.code == 2290:
                 raise ServiceException("Service database integrity error: Invalid values")
             elif error.code == 1400:

@@ -10,25 +10,26 @@ class Payment:
     def create(self, reservation_id:int, amount:float):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("INSERT INTO Payment (reservation_id, amount) "
-                           "VALUES (:reservation_id, :amount);",
+            payment_id_var = cursor.var(cx_Oracle.NUMBER)
+            cursor.execute("INSERT INTO Payment (reservation_id, amount) VALUES (:reservation_id, :amount) RETURNING id INTO :id",
                            {
                                "reservation_id": reservation_id,
                                "amount": amount,
+                               'id': payment_id_var
                             })
             self.connection.commit()
-            return True
+            return int(payment_id_var.getvalue()[0])
         except cx_Oracle.IntegrityError as e:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise PaymentException("Object with duplicate data in database")
+                raise PaymentException("Payment database integrity error: Payment with duplicate data in database")
             elif error.code == 2290:
-                raise PaymentException("Invalid values")
+                raise PaymentException("Payment database integrity error: Invalid values")
             elif error.code == 1400:
-                raise PaymentException("Cannot insert NULL values")
+                raise PaymentException("Payment database integrity error: Cannot insert NULL values")
             elif error.code == 1438 or error.code == 12899:
-                raise PaymentException("Too large value")
+                raise PaymentException("Payment database integrity error: Too large value")
             else:
                 raise PaymentException(f'Payment database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
@@ -52,13 +53,13 @@ class Payment:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise PaymentException("Payment database integrity error:Object with duplicate data in database")
+                raise PaymentException("Payment database integrity error: Payment with duplicate data in database")
             elif error.code == 2290:
-                raise PaymentException("Payment database integrity error:Invalid values")
+                raise PaymentException("Payment database integrity error: Invalid values")
             elif error.code == 1400:
-                raise PaymentException("Payment database integrity error:Cannot insert NULL values")
+                raise PaymentException("Payment database integrity error: Cannot insert NULL values")
             elif error.code == 1438 or error.code == 12899:
-                raise PaymentException("Payment database integrity error:Too large value")
+                raise PaymentException("Payment database integrity error: Too large value")
             else:
                 raise PaymentException(f'Payment database integrity error: {error.message}')
         except cx_Oracle.DatabaseError as e:
@@ -69,12 +70,12 @@ class Payment:
             self.connection.rollback()
             raise PaymentException(f'Payment error: {e}')
 
-    def delete(self, reservation_id:int):
+    def delete(self, id:int):
         try:
             cursor = self.connection.cursor()
-            cursor.execute(f"DELETE FROM Payment WHERE reservation_id = :reservation_id",
+            cursor.execute(f"DELETE FROM Payment WHERE id = :id",
                            {
-                               "reservation_id": reservation_id
+                               "id": id
                            })
             self.connection.commit()
         except cx_Oracle.DatabaseError as e:

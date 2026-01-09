@@ -22,10 +22,10 @@ class ServiceReservation:
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
-            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+            raise ReservationServiceException(f'Service reservation database error: {error_obj.message}')
         except Exception as e:
             self.connection.rollback()
-            raise ReservationServiceException(f'Reservation service error: {e}')
+            raise ReservationServiceException(f'Service reservation error: {e}')
 
     def update(self, reservation_id:int, service_id:int, hours:int):
         try:
@@ -40,10 +40,10 @@ class ServiceReservation:
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
-            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+            raise ReservationServiceException(f'Service reservation database error: {error_obj.message}')
         except Exception as e:
             self.connection.rollback()
-            raise ReservationServiceException(f'Reservation service error: {e}')
+            raise ReservationServiceException(f'Service reservation error: {e}')
 
     def delete(self, reservation_id:int, service_id:int):
         try:
@@ -57,10 +57,10 @@ class ServiceReservation:
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
-            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+            raise ReservationServiceException(f'Service reservation database error: {error_obj.message}')
         except Exception as e:
             self.connection.rollback()
-            raise ReservationServiceException(f'Reservation service error: {e}')
+            raise ReservationServiceException(f'Service reservation error: {e}')
 
     def read(self, reservation_id:int):
         try:
@@ -72,9 +72,9 @@ class ServiceReservation:
             return cursor.fetchall()
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
-            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+            raise ReservationServiceException(f'Service reservation database error: {error_obj.message}')
         except Exception as e:
-            raise ReservationServiceException(f'Reservation service error: {e}')
+            raise ReservationServiceException(f'Service reservation error: {e}')
 
     def read_all(self):
         try:
@@ -83,6 +83,6 @@ class ServiceReservation:
             return cursor.fetchall()
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
-            raise ReservationServiceException(f'Reservation service database error: {error_obj.message}')
+            raise ReservationServiceException(f'Service reservation database error: {error_obj.message}')
         except Exception as e:
-            raise ReservationServiceException(f'Reservation service error: {e}')
+            raise ReservationServiceException(f'Service reservation error: {e}')

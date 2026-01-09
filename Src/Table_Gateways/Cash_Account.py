@@ -29,7 +29,7 @@ class CashAccount:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise CashAccountError("Cash Account database integrity error: Object with duplicate data in database")
+                raise CashAccountError("Cash Account database integrity error: Cash Account with duplicate data in database")
             elif error.code == 2290:
                 raise CashAccountError("Cash Account database integrity error: Invalid values")
             elif error.code == 1400:
@@ -62,7 +62,7 @@ class CashAccount:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise CashAccountError("Cash Account database integrity error: Object with duplicate data in database")
+                raise CashAccountError("Cash Account database integrity error: Cash Account with duplicate data in database")
             elif error.code == 2290:
                 raise CashAccountError("Cash Account database integrity error: Invalid values")
             elif error.code == 1400:
@@ -114,21 +114,22 @@ class CashAccount:
     def transfer_to_system_account(self, amount:float, id_from:int):
         try:
             cursor = self.connection.cursor()
-            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE - :amount WHERE id = :id;",
+            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE - :amount WHERE id = :id",
                            {
                                'amount': amount,
                                'id': id_from
                            })
-            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE + :amount WHERE ACCOUNT_TYPE = 'SYSTEM';",
+            cursor.execute("UPDATE CASH_ACCOUNT SET BALANCE = BALANCE + :amount WHERE ACCOUNT_TYPE = 'SYSTEM'",
                            {
                                'amount': amount
                            })
             self.connection.commit()
+            return True
         except cx_Oracle.IntegrityError as e:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise CashAccountError("Cash Account database integrity error: Object with duplicate data in database")
+                raise CashAccountError("Cash Account database integrity error: Cash Account with duplicate data in database")
             elif error.code == 2290:
                 raise CashAccountError("Cash Account database integrity error: Invalid values")
             elif error.code == 1400:

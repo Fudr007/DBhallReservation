@@ -10,7 +10,7 @@ ON cash_account ( CASE WHEN account_type = 'SYSTEM' THEN account_type END);
 CREATE TABLE customer (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id INT NOT NULL,
-    name VARCHAR2(100) NOT NULL (REGEXP_LIKE(name, '/^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžæÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.''-]+$/u')),
+    name VARCHAR2(100) NOT NULL CHECK (REGEXP_LIKE(name, '^[a-zA-ZĚŠČŘŽÝÁÍÉÚŮŇĎŤÓěščřžýáíéúňďťó0-9 ]+$')),
     email VARCHAR2(100) NOT NULL CHECK (REGEXP_LIKE(email, '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')) UNIQUE,
     phone VARCHAR2(15) NOT NULL CHECK (REGEXP_LIKE(phone, '^\+?[0-9]{9,15}$')),
     customer_type VARCHAR2(20) NOT NULL CHECK (customer_type IN ('INDIVIDUAL', 'TEAM')),
@@ -21,7 +21,7 @@ CREATE TABLE customer (
 
 CREATE TABLE hall (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR2(100) NOT NULL UNIQUE (REGEXP_LIKE(name, '/^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžæÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.''-]+$/u')),
+    name VARCHAR2(100) NOT NULL UNIQUE CHECK (REGEXP_LIKE(name, '^[a-zA-ZĚŠČŘŽÝÁÍÉÚŮŇĎŤÓěščřžýáíéúňďťó0-9 ]+$')),
     sport_type VARCHAR2(30) NOT NULL CHECK (sport_type IN ('FOOTBALL', 'BASKETBALL', 'VOLLEYBALL', 'BADMINTON', 'HANDBALL', 'FLORBALL')),
     hourly_rate NUMBER(8,2) NOT NULL CHECK(hourly_rate >=0),
     capacity NUMBER NOT NULL CHECK(capacity > 0)
@@ -32,10 +32,10 @@ CREATE TABLE reservation (
     customer_id INT NOT NULL,
     start_time DATE NOT NULL,
     end_time DATE NOT NULL,
-    status VARCHAR2(20) NOT NULL CHECK (status IN ('CREATED', 'CONFIRMED', 'CANCELLED')),
+    status VARCHAR2(20) NOT NULL CHECK (status IN ('CREATED', 'CONFIRMED')),
     total_price NUMBER(10,2) CHECK(total_price >= 0),
     CHECK(start_time < end_time),
-    FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE CASCADE
+    FOREIGN KEY (customer_id) REFERENCES customer(id) ON DELETE SET NULL
 );
 
 CREATE TABLE reservation_hall (
@@ -48,7 +48,7 @@ CREATE TABLE reservation_hall (
 
 CREATE TABLE service (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name VARCHAR2(100) NOT NULL UNIQUE (REGEXP_LIKE(name, '/^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžæÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.''-]+$/u')),
+    name VARCHAR2(100) NOT NULL UNIQUE CHECK (REGEXP_LIKE(name, '^[a-zA-ZĚŠČŘŽÝÁÍÉÚŮŇĎŤÓěščřžýáíéúňďťó0-9 ]+$')),
     price_per_hour NUMBER(8,2) NOT NULL CHECK(price_per_hour >=0),
     is_optional NUMBER(1) DEFAULT 1 CHECK (is_optional IN (0,1))
 );
@@ -67,7 +67,7 @@ CREATE TABLE payment (
     reservation_id INT NOT NULL,
     amount NUMBER(10,2) NOT NULL CHECK(amount > 0),
     paid_at DATE DEFAULT SYSDATE,
-    FOREIGN KEY (reservation_id) REFERENCES reservation(id)
+    FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE SET NULL
 );
 
 INSERT INTO cash_account (account_type, balance)

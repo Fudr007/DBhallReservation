@@ -1,3 +1,6 @@
+import os
+import sys
+
 from cx_Oracle import DatabaseError
 from Src.Config.Config_load import load_config, load_paths
 from Src.DBconnect import DBconnect
@@ -18,10 +21,18 @@ class AppError(Exception):
 class AppConfigError(Exception):
     pass
 
+def get_base_path():
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
 class App:
     def __init__(self, path_cfg:str="config.ini"):
         self.connection = None
-        self.config_path = path_cfg
+        if path_cfg is None:
+            self.config_path = os.path.join(get_base_path(), "config.ini")
+        else:
+            self.config_path = path_cfg
         self.sql_path = None
         self.import_cash_accounts = None
         self.import_customers = None
@@ -38,8 +49,12 @@ class App:
             self.db_load_connect()
         except AppConfigError as e:
             self.shutdown(f"App crashed when configuring database: {str(e)}")
+            self.UI.user_input("enter", "Press Enter to continue:")
+            self.UI.clear_console()
         except Exception as e:
             self.shutdown(f"App unexpectedly crashed: {str(e)}")
+            self.UI.user_input("enter", "Press Enter to continue:")
+            self.UI.clear_console()
 
         while self._is_running:
             self.UI.print_line()
@@ -50,6 +65,8 @@ class App:
                 chosen_action = self.UI.user_input("str", "Choose action number: ")
                 if chosen_action not in self.actions():
                     raise AppError("Invalid action number")
+                self.UI.clear_console()
+                self.UI.print_line()
                 self.actions()[chosen_action]()
             except Exception as e:
                 self.UI.message(e)
@@ -69,8 +86,8 @@ class App:
 
     def increase_customers_balance(self):
         try:
-            customer = Customer(self.connection)
-            all_customers = customer.read_all()
+            customer_service = CustomerService(self.connection)
+            all_customers = customer_service.read_customers_and_balance()
             information = self.UI.change_balance_form(all_customers)
             cash_account = CashAccount(self.connection)
             cash_account.update(information["amount"], information["balance_id"], '+')
@@ -112,7 +129,7 @@ class App:
     def delete_reservation(self):
         try:
             reservation_service = ReservationService(self.connection)
-            reservation_customer = reservation_service.read_id_name_email()
+            reservation_customer = reservation_service.read_reservation_detail()
             information = self.UI.delete_reservation_form(reservation_customer)
             reservation = Reservation(self.connection)
             reservation.delete(information)
@@ -136,19 +153,36 @@ class App:
             self.UI.message(e)
 
     def view_now_available_halls(self):
-        reservation_service = ReservationService(self.connection)
-        available_halls = reservation_service.read_available_halls()
-        self.UI.print_halls(available_halls)
+        try:
+            reservation_service = ReservationService(self.connection)
+            available_halls = reservation_service.read_available_halls()
+            self.UI.print_halls(available_halls)
+        except Exception as e:
+            self.UI.message(e)
 
     def view_reservations_detail(self):
-        reservation_service = ReservationService(self.connection)
-        reservations = reservation_service.read_reservation_detail()
-        self.UI.print_reservations_detailed(reservations)
+        try:
+            reservation_service = ReservationService(self.connection)
+            reservations = reservation_service.read_reservation_detail()
+            self.UI.print_reservations_detailed(reservations)
+        except Exception as e:
+            self.UI.message(e)
 
     def view_report(self):
-        reservation_service = ReservationService(self.connection)
-        data = reservation_service.report()
-        self.UI.print_report(data)
+        try:
+            reservation_service = ReservationService(self.connection)
+            data = reservation_service.report()
+            self.UI.print_report(data)
+        except Exception as e:
+            self.UI.message(e)
+
+    def view_customers(self):
+        try:
+            customer_service = CustomerService(self.connection)
+            data = customer_service.read_customers_and_balance()
+            self.UI.print_customers(data)
+        except Exception as e:
+            self.UI.message(e)
 
     def import_data(self):
         try:
@@ -201,10 +235,11 @@ class App:
             "5": self.add_reservation,
             "6": self.delete_reservation,
             "7": self.pay_reservation,
-            "8": self.view_now_available_halls,
-            "9": self.view_reservations_detail,
-            "10": self.import_data,
-            "11": self.view_report
+            "8": self.view_customers,
+            "9": self.view_now_available_halls,
+            "10": self.view_reservations_detail,
+            "11": self.import_data,
+            "12": self.view_report
         }
 
     def shutdown(self, message="Thank you for using our service!"):

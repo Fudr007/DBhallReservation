@@ -4,7 +4,7 @@ def load_sql(connection, path="db.sql", ):
     try:
         cursor = connection.cursor()
 
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             sql_script = f.read()
 
         for statement in sql_script.split(";"):
@@ -26,6 +26,6 @@ def load_sql(connection, path="db.sql", ):
         return True
 
     except cx_Oracle.DatabaseError as e:
-        return e
+        raise Exception(f'Database error: {e}')
     except Exception as e:
-        return e
+        raise Exception(f'Error: {e}')

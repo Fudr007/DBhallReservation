@@ -24,7 +24,7 @@ class Customer:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise CustomerError("Customer database integrity error: Object with duplicate data in database")
+                raise CustomerError("Customer database integrity error: Customer with duplicate data in database")
             elif error.code == 2290:
                 raise CustomerError("Customer database integrity error: Invalid values")
             elif error.code == 1400:
@@ -55,7 +55,7 @@ class Customer:
             error, = e.args
             self.connection.rollback()
             if error.code == 1:
-                raise CustomerError("Customer database integrity error: Object with duplicate data in database")
+                raise CustomerError("Customer database integrity error: Customer with duplicate data in database")
             elif error.code == 2290:
                 raise CustomerError("Customer database integrity error: Invalid values")
             elif error.code == 1400:

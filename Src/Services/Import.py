@@ -47,7 +47,7 @@ class Import:
             if error.code == 1:
                 raise ImportingError("Already exists")
             else:
-                raise ImportingError(f'Import error: {error.message}')
+                raise ImportingError(f'Import error: {error.message} {table}')
         except cx_Oracle.DatabaseError as e:
             error_obj, = e.args
             self.connection.rollback()
